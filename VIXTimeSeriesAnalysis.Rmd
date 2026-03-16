@@ -1,10 +1,21 @@
 ---
-title: 'Final Project: VIX Time Series Analysis Report'
-subtitle: "Prof. Tomoyuki Ichiba"
-author: "Aarti Garaye (aartigaraye@ucsb.edu)"
-date: "`r Sys.Date()`"
+title: "Modeling Volatility in Financial Markets: A Time Series Analysis of the CBOE Volatility Index (VIX)"
+author: |
+  | Aarti Garaye
+  | aartigaraye@ucsb.edu
+  | PSTAT 174 - Time Series Analysis
+  | Professor Tomoyuki Ichiba
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
 urlcolor: blue
-output: pdf_document
+output:
+  pdf_document:
+    toc: false
+    number_sections: true
+bibliography: references.bib
+link-citations: true
+fontsize: 12pt
+geometry: margin=1in
+linestretch: 1.25
 header-includes:
   - \usepackage{tikz}
   - \usepackage{amsmath}
@@ -16,10 +27,1019 @@ header-includes:
   - \DeclareMathOperator{\Cov}{Cov}
   - \DeclareMathOperator{\Var}{Var}
   - \newcommand{\indep}{\perp\!\!\!\perp}
+abstract: |
+  This study examines the CBOE Volatility Index (VIX), often called the "fear gauge" of financial markets, using basic time series methodologies. Unfortunately, to date, measuring and forecasting volatility accurately is still a huge challenge. In this paper, the time series properties of daily VIX data are analyzed using classical time series modeling techniques. The Box–Jenkins methodology is applied to identify and estimate an appropriate Seasonal Autoregressive Integrated Moving Average (SARIMA) model to capture the temporal dependence structure of the series. In addition, a Generalized Autoregressive Conditional Heteroskedasticity (GARCH) model is deployed to account for volatility clustering, a common feature of financial time series. The results demonstrate that while the SARIMA model effectively captures the dynamics of the conditional mean, the GARCH framework provides additional insight into the time-varying volatility of the time series.
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+knitr::opts_chunk$set(
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE,
+  fig.align = 'center',
+  fig.pos = 'H',
+  fig.width = 8,
+  fig.height = 5
+)
+
+# Load required libraries
+library(readr)
+library(forecast)
+library(astsa)
+library(tseries)
+library(rugarch)
+library(ggplot2)
+library(gridExtra)
+library(knitr)
+library(kableExtra)
+library(moments)
+library(FinTS)
 ```
 
-# 
+\newpage
+
+# Introduction
+Asset price volatility is of crucial importance to scholars, investors, and policy makers. Volatility plays a central role in derivatives pricing, hedging strategies, portfolio selection, and risk management [@WANG2019121951]. In financial markets, the CBOE Volatility Index (VIX) is widely used as a benchmark measure of expected market volatility derived from options on the S&P 500 index. Because the VIX reflects investor expectations of future market uncertainty, understanding its statistical behavior is important for both financial practitioners and researchers.
+
+## Background and Motivation
+Volatility forecasting is an important task in financial markets. It has occupied the attention of academics and practitioners over the past three to four decades. It's importance is visible in an array of areas like investment, security valuation, risk management, and monetary policy. (@majmudar2004vix). 
+For example, the annualized SD of US stocks over the past ten years is 16.8% compared to 12.7% over the preceding then years, a period which included the fallout from the dot-com bubble (Based on S&P 500). This heightened volatility has obvious implications for asset and derivative pricing as well as the conduct of portfolio and risk management. Volatility plays a key role in market-timing decisions, in the pricing of options and other derivatives and in determining market risk and hedge ratios. Therefore, there remains a need to provide accurate forecasts of volatility, something for which there is an established literature but with no real consensus on the preferred approach. (@Kambouroudis15032016)
+
+Assuming efficient markets, a good source of volatility estimate is the implied volatility (VIX). One of the most widely used indicators of market volatility is the CBOE Volatility Index (VIX). The VIX is calculated from options prices on the S&P 500 index and reflects the market's expectation of volatility over the next 30 days. Due to its ability to capture investor sentiment and expectations about future uncertainty, the VIX is often referred to as the “fear index” in financial markets [@cboeVIX]. Large spikes in the VIX are frequently associated with periods of financial stress such as market crashes or economic crises.
+
+## Literature Review
+Previous research has extensively documented the properties of VIX. @BLAIR20015 found that VIX exhibits mean-reverting behavior and volatility clustering. @repec:rio:texdis:548 demonstrated that GARCH-type models perform well in capturing VIX dynamics. @corsi2009simple introduced the Heterogeneous Autoregressive (HAR) model for VIX forecasting, which has become a benchmark in the literature.
+
+## Methodology
+Because the VIX is observed over time at a regular frequency, time series analysis provides a natural framework for studying its behavior. Statistical time series models allow researchers to analyze the dependence structure of the data, identify patterns such as trends or persistence, and generate forecasts of future values. In this project, the dynamics of the VIX are examined using classical time series methods. The Box–Jenkins methodology is applied to identify and estimate an appropriate Seasonal Autoregressive Integrated Moving Average (SARIMA) model for the time series. In addition, a Generalized Autoregressive Conditional Heteroskedasticity (GARCH) model is employed to capture volatility clustering that is commonly observed in financial data. Together, these models provide insight into both the mean dynamics and the time-varying volatility of the VIX time series.
+
+In short, This analysis employs two complementary methodologies:
+
+1. **SARIMA Modeling** (Box-Jenkins approach): To model the conditional mean of log-differenced VIX
+2. **GARCH Modeling**: To capture the time-varying volatility and volatility clustering observed in VIX returns
+
+# Data
+The dataset used in this project consists of daily closing values of the CBOE Volatility Index (VIX), which is a widely recognized measure of market volatility derived from options on the S&P 500 index. The VIX reflects the market's expectation of 30-day forward-looking volatility and is often referred to as the “fear index” due to its ability to capture investor sentiment during periods of financial stress [@cboeVIX].
+
+## Data Description
+The VIX ranges from $0$ to $\infty$, while there are some missing values there are no negative VIX indexes. There are a total of 9425 observations. 
+
+### Source and Collection
+The dataset is obtained from the [FRED: Federal Reserve Bank of St. Louis.](https://fred.stlouisfed.org/series/VIXCLS). he source is Chicago Board of Options Exchange and released by CBOE Market Statistics. The VIX observed when the market closed was monitored and stored in the dataset. The data is not adjusted for seasonality. 
+
+### Time Range and Frequency
+- **Start Date**: January 2, 1990
+- **End Date**: February 16, 2026
+- **Frequency**: Daily (business days)
+- **Total Observations**: 9,425 observations
+
+### Variable Description
+The dataset contains two columns:
+
+1. **observation_date**: The observation date (YYYY-MM-DD format)
+2. **VIXCLS**: The closing value of the VIX on that date
+
+The VIX is quoted as an annualized percentage. For example, a VIX value of 20 corresponds to an expected annualized volatility of 20%, or approximately 1.26% on a daily basis ($\frac{20}{\sqrt{252}}$, where $252$ is the typical number of trading days per year).
+
+## Data Characterstics
+
+Some of the basic summary statistic of the dataset is given below in the table. This shows the mean, median, standard deviation, number of observations, min, and max values. Note, that I have just decided to omit the values where VIX was NA, this reduced the number of observations from 9425 to 9124. This is still more than enough datapoints for us to work with.
+
+```{r load-data}
+# Load the VIX data
+vix_data <- read_csv("Data/VIXCLS.csv", show_col_types = FALSE)
+vix_data <- na.omit(vix_data)
+
+# Convert to time series object
+vix_ts <- ts(vix_data$VIXCLS, 
+             start = c(1990, 1), 
+             frequency = 252)  # Trading days per year
+
+# Basic statistics
+vix_stats <- data.frame(
+  Statistic = c("Mean", "Median", "Std. Dev.", "Min", "Max", "N"),
+  Value = c(
+    mean(vix_data$VIXCLS, na.rm = TRUE),
+    median(vix_data$VIXCLS, na.rm = TRUE),
+    sd(vix_data$VIXCLS, na.rm = TRUE),
+    min(vix_data$VIXCLS, na.rm = TRUE),
+    max(vix_data$VIXCLS, na.rm = TRUE),
+    nrow(vix_data)
+  )
+)
+
+kable(vix_stats, 
+      digits = 2,
+      caption = "Summary Statistics of VIX",
+      booktabs = TRUE) %>%
+  kable_styling(latex_options = c("hold_position"))
+```
+
+## Exploratory Data Analysis
+Before we begin fitting any models, it is standard practice to plot the time series plot of the data This provides a basic insight on whether we would want to perform any transformations before fitting any models. 
+
+### Time Series Plot
+```{r plot-vix, fig.cap="Daily VIX Closing Values (1990-2026)", fig.height=4, fig.width=7}
+plot(vix_ts, 
+     main = "CBOE Volatility Index (VIX) - Daily Close",
+     ylab = "VIX Level",
+     xlab = "Year",
+     lwd = 0.5)
+
+# Add horizontal line at mean
+abline(h = mean(vix_data$VIXCLS, na.rm = TRUE), 
+       col = "red", 
+       lty = 2, 
+       lwd = 2)
+
+# Highlight major crisis periods
+rect(2008, 0, 2009, 100, col = rgb(1, 0, 0, 0.1), border = NA)
+rect(2020, 0, 2021, 100, col = rgb(1, 0, 0, 0.1), border = NA)
+
+text(2008.5, 75, "2008 Financial\nCrisis", cex = 0.8)
+text(2020.5, 75, "COVID-19\nPandemic", cex = 0.8)
+```
+
+The time series plot reveals several important features. **Volatility Clustering**, periods of high volatility tend to be followed by high volatility (and vice versa). **Crisis Spikes**, notable spikes during the 2008 financial crisis (VIX > 80) and 2020 COVID-19 pandemic (VIX > 80). **Non-stationarity** clear evidence of time-varying mean and variance. And **Asymmetry**, VIX tends to rise faster (sharp spikes) than it falls (gradual decay). The red dashed line represents the mean VIX for this period which is somewhere around 20. 
+
+Another helpful insight would be to look at the histogram is this data. This gives us information about the distribution of VIX.
+```{r hist-vix, fig.cap="Distribution of VIX Values", fig.height=4, fig.width=7}
+par(mfrow = c(1, 2))
+
+# Histogram
+hist(vix_data$VIXCLS, 
+     breaks = 50,
+     main = "Histogram of VIX",
+     xlab = "VIX Level",
+     col = "lightblue",
+     border = "white")
+
+# Q-Q plot
+qqnorm(vix_data$VIXCLS, 
+       main = "Q-Q Plot: VIX vs Normal",
+       pch = 20,
+       col = alpha("darkblue", 0.5))
+qqline(vix_data$VIXCLS, 
+       col = "red", 
+       lwd = 2)
+
+par(mfrow = c(1, 1))
+```
+The histogram shows strong positive skewness, and the Q-Q plot reveals substantial departures from normality, particularly in the right tail. This informs us that a log transform is necessary before fitting any models. 
+
+## Why This?
+
+I selected the VIX for several compelling reasons:
+
+1. **Economic Importance**: The VIX is a critical indicator used by investors, policymakers, and researchers worldwide
+2. **Rich Dynamics**: The dataset exhibits complex time series patterns including volatility clustering, mean reversion, and regime changes
+3. **Methodological Challenge**: VIX provides an excellent test case for advanced time series methods including SARIMA and GARCH
+4. **Practical Relevance**: Accurate VIX modeling has direct applications in trading, risk management, and portfolio construction
+5. **Data Quality**: FRED provides high-quality, reliable data with comprehensive documentation
+
+Additionally, I am interested in Mathematical Finance and have been learning about VIX in my other classes, especially the smile vs. smirk. I thought it would be interesting to blend what I am learning in a purely theoretical class (strong mathematical derviations) to fitting models and see how they are used to forecast. 
+
+# Methodology
+
+## SARIMA(p, d, q) × (P, D, Q) Model
+To capture the seasonal component of a time series, we fit a Seasonal Autoregressive Integrated Moving Average (SARIMA) model. Think of SARIMA as a generalized ARIMA model but also accounting for seasonality. The general form is:
+$$
+\Phi_P\left(B^s\right)\phi(B)\nabla^D_s\nabla^dx_t = \delta + \Theta_Q(B^s)\theta(B)w_t; \quad t \in \mathbb{Z}
+$$
+where $\{w_t\}$ is the Gaussian white noise, $\phi, \theta$ are the polynomials (similar to ARIMA) and the new polynomials introduced are
+\begin{align*}
+\Phi_P(z) &:= 1-\Phi_1z-\Phi_2z^2\ -...- \ \Phi_Pz^P, \\
+\Theta_Q(z) &:= 1 + \Theta_1z +\Theta_2z^2 + ... +\  \Theta_Qz^Q; \quad z \in \mathbb{C}
+\end{align*}
+for seasonality with the seasonal lag operator $B^s$ and the seasonal difference operator is defined as $\nabla_s := 1-B^s$.
+
+VIX measure "fear" or "uncertainty." This is driven by current affairs, politics, and wars. In other words VIX is driven by news, events, and crises. However, these are not calendar patterns. Unlike retail sales (Christmas spike) or unemployment (summer hiring), market fear doesn't follow a calendar. Crises are random and unpredictable. 
+
+Furthermore, looking at the time series plot there were no regular spikes or patterns, infact the 2008 and 2020 spikes were unpredictable. If there were seasonality, we would see consistent patterns every 12 months (like higher VIX every January, or every Q4). Some may argue that there are some seasonal effects in finance like "January Effect" and "Sell in May and Go Away" (@Bouman) but these are for stocks return patterns, not volatility patterns 
+
+There is, however, an intraday seasonality pattern (U-shaped) (@hughes2005source) observed. High volatility is observed right when the market opens and the trading volumes slow down during the middle of the day and spike back up when the market is about to close. Remember, that in the US the market opens 9:30 am ET and closes 5:00 pm ET. (@ellul2005opening). However, to incorporate this seasonality patter we must have minute based, or hour based data. Our dataset has daily closing VIX index. Other weekly seasonality patterns are weak and controversial (@caporale2019stock). Thus, for VIX, we focus on the non-seasonal ARIMA(p, d, q) component as there is no clear seasonal pattern in daily financial volatility.
+
+### Box-Jenkins Methodology
+The Box-Jenkins approach to time series modelling consists of extracting predictable movements (or patterns) from the observed data through a series of iterations.(@makridakis1997arma) The univariate Box-Jenkins method is purely a forecasting tool; no explanation is offered in that there are no regressor-type variables. The Box-Jenkins approach follows a four phase procedure (@aljandali2017box): 
+
+1. **Identification**: Determine the orders p, d, and q using ACF/PACF plots and unit root tests
+2. **Estimation**: Estimate model parameters using maximum likelihood
+3. **Diagnostic Checking**: Verify model adequacy through residual analysis
+4. **Forecasting**: Generate forecasts with confidence intervals
+
+**Note:** We follow this methodology in the Results section for SARIMA models
+
+## GARCH Model
+While ARIMA models capture the conditional mean dynamics, financial time series like VIX often exhibit **volatility clustering**. These are periods where large changes tend to be followed by large changes and small changes by small changes. GARCH (Generalized Autoregressive Conditional Heteroskedasticity) models explicitly capture this time-varying volatility (@BOLLERSLEV1986307) 
+
+GARCH models are used mostly when forecasting time-varying volatility in finance and economic data. It models heteroskedasticity, where error variance is not constant, by assuming current variance depends on past squared residuals (ARCH term) and past variances (GARCH term) (@engle1986modelling). Thus, GARCH is crucial for modeling "volatility clustering," where high-volatility periods are followed by higher volatility and calm periods by calm, often seen in stock returns, exchange rates, and inflation. 
+### Specifications
+
+**Mean equation**:
+$$r_t = \mu + \epsilon_t$$
+
+where $\epsilon_t = \sigma_t z_t$ and $z_t \sim N(0, 1)$
+
+**Variance equation**:
+$$\sigma_t^2 = \omega + \sum_{i=1}^{p} \alpha_i \epsilon_{t-i}^2 + \sum_{j=1}^{q} \beta_j \sigma_{t-j}^2$$
+where:
+- $\sigma_t^2$ is the conditional variance at time $t$
+- $\omega > 0$ is the constant term
+- $\alpha_i$ captures the ARCH effect (impact of past shocks)
+- $\beta_j$ captures the GARCH effect (persistence of volatility)
+
+The most common specification is GARCH(1,1), which uses one lag of the squared error $(q=1)$ and one lag of the conditional variance $(p=1)$ 
+$$\sigma_t^2 = \omega + \alpha \epsilon_{t-1}^2 + \beta \sigma_{t-1}^2$$
+Key properties: **Stationarity**: Requires $\alpha + \beta < 1$ **Persistence**: The sum $\alpha + \beta$ measures volatility persistence **Unconditional variance**: $\sigma^2 = \omega / (1 - \alpha - \beta)$
+
+GARCH(1,1) is highly parsimonious (easy to estimate) and generally superior to simple ARCH models in predicting future variance because it captures long-run persistence in volatility. (@majkagarch)
+
+# Results
+
+## SARIMA Analysis
+As mentioned in the EDA section, we must transform the data to stabilize the varaiance. Here we will be following the Box-Jenkins approach step-by-step. Recall, that we have already plotted the data in the EDA section so we can skip that step.
+### Step 1: Data Transformation
+Given the nature of VIX as a strictly positive variable with time-varying variance, we apply a log transformation to stabilize variance, from now on we will be looking at $\log(\text{VIX})$
+```{r transform}
+log_vix <- log(vix_data$VIXCLS)
+```
+Once we have transformed the data, we must identify the difference $d$. 
+### Step 2: Identification of Differencing Order
+The ADF test checks if a time series is stationary. Stationarity is key for ARIMA/SARIMA models because these models assume the mean, variance, and autocorrelation structure don’t change over time. The “augmented” part means the test adds lagged differences of the series to remove autocorrelation in residuals:
+$$
+\Delta x_t = \alpha + \beta t + \gamma x_t + \sum_{i=1}^p \delta_i\Delta x_{t-i} + \epsilon_t
+$$
+
+
+```{r adf-test}
+# ADF test on levels
+adf_levels <- adf.test(log_vix)
+
+# ADF test on first differences
+dlog_vix <- diff(log_vix)
+adf_diff <- adf.test(dlog_vix)
+
+# Create results table
+adf_results <- data.frame(
+  Series = c("Log(VIX)", " Diff Log(VIX)"),
+  `ADF Statistic` = c(adf_levels$statistic, adf_diff$statistic),
+  `P-value` = c(adf_levels$p.value, adf_levels$p.value),
+  Conclusion = c("Stationary", "Stationary")
+)
+
+kable(adf_results,
+      digits = 4,
+      caption = "Augmented Dickey-Fuller Test Results",
+      booktabs = TRUE) %>%
+  kable_styling(latex_options = "hold_position")
+```
+The ADF test tells us the log-transformed series is stationary in levels. That means it does not have a unit root, thus we do not need $d$ in our SARIMA model. Thus, we can fit SARIMA directly on `log_vix` with $d=0$. 
+
+### Step 3: Estimation of Parameters
+To estimate the parameters we must look at the ACF and the PACF of the transformed data. 
+```{r acf-pacf, fig.cap="ACF and PACF of Differenced Log(VIX)", fig.height=5, fig.width=7}
+par(mfrow = c(2, 1))
+
+acf(log_vix, 
+    lag.max = 100,
+    main = "ACF of Log(VIX)",
+    na.action = na.pass)
+
+pacf(log_vix, 
+     lag.max = 100,
+     main = "PACF of Log(VIX)",
+     na.action = na.pass)
+
+par(mfrow = c(1, 1))
+```
+The ACF for the log transformed data is a slow decaying (long-memory) and the pacf cuts off after the first lag. Since a slow decaying ACF is a characteristic of an AR process. Also from the last homework 
+we know that the ideal model to fit here is SARIMA with $(p,d,q) = (1,0,0) \text{ and } (P,D,Q)_s = (0,0,0)$ 
+
+However, the ACF is screaming long memory, i.e. a very slow, gradual linear decay, doesn't reach zero until around lag 400-500. This is a sign of fractional integration. Even though the ADF test suggested that $d=0$ the ACF is saying something else. 
+
+VIX exhibits fractional integration, it's between I(0) and I(1). The true differencing order is something like $d=0.5, \ 0.4$ or something like that (not an integer!) The ADF test only tests the unit root and rejects it, but the slowly decaying ACF suggests otherwise.
+
+However, I have already chosen a second method, GARCH, so long memory won't be helpful here. We could use `fracdiff` or `optim` to find the maximum likelihood for possible $d$ but right now the possible choices for fitting a sarima model are ARIMA(1,0,0) and ARIMA(1,1,1) with difference 1 coming from the ACF and just to have a third model we can use ARMIA(1,1,1). Please refer to the separate section on long memory I have posted on my [github repo](https://github.com/aarti-garaye/VIXTimeSeriesAnalysis.git) for this analysis.
+
+### Step 4: Diagnostics and Model Estimation
+```{r model-comparison}
+# Fit candidate models
+fit011 <- arima(log_vix, order = c(0, 1, 1))
+fit110 <- arima(log_vix, order = c(1, 1, 0))
+fit111 <- arima(log_vix, order = c(1, 1, 1))
+
+# Compare models
+model_comparison <- data.frame(
+  Model = c("ARIMA(0,1,1)", "ARIMA(1,1,0)", "ARIMA(1,1,1)"),
+  AIC = c(AIC(fit011), AIC(fit110), AIC(fit111)),
+  BIC = c(BIC(fit011), BIC(fit110), BIC(fit111))
+)
+
+# Highlight best model
+model_comparison$Best_AIC <- ifelse(model_comparison$AIC == min(model_comparison$AIC), "*", "")
+model_comparison$Best_BIC <- ifelse(model_comparison$BIC == min(model_comparison$BIC), "*", "")
+
+kable(model_comparison,
+      digits = 2,
+      caption = "Model Comparison - Information Criteria (* indicates best model)",
+      booktabs = TRUE) %>%
+  kable_styling(latex_options = "hold_position")
+```
+
+The ARIMA(1,1,1) model has the lowest AIC, while ARIMA(0,1,1) has the lowest BIC. We select **ARIMA(1,1,1)** as it provides the best balance between fit and parsimony according to AIC. 
+
+```{r best-model}
+best_arima <- fit111
+
+# Display coefficients
+coef_table <- data.frame(
+  Parameter = names(coef(best_arima)),
+  Estimate = coef(best_arima),
+  SE = sqrt(diag(vcov(best_arima)))
+)
+coef_table$`t-value` <- coef_table$Estimate / coef_table$SE
+coef_table$`p-value` <- 2 * (1 - pnorm(abs(coef_table$`t-value`)))
+
+kable(coef_table,
+      digits = 4,
+      caption = "ARIMA(1,1,1) Parameter Estimates",
+      booktabs = TRUE,
+      row.names = FALSE) %>%
+  kable_styling(latex_options = "hold_position")
+```
+
+All parameters are statistically significant at the 1% level. 
+
+### Step 5: Model Selection
+```{r diagnostics, fig.cap="Diagnostic Plots for ARIMA(1,1,1)", fig.height=5, fig.width=7, results='hide'}
+# Use sarima for nice diagnostic plots
+sarima_fit <- sarima(log_vix, 1, 1, 1)
+```
+**Diagnostic Assessment**:
+
+1. **Standardized Residuals**: No obvious patterns or trends; appear to fluctuate around zero
+2. **ACF of Residuals**: Most lags are within confidence bounds, suggesting residuals are approximately white noise
+3. **Q-Q Plot**: Shows some deviation in the tails, indicating heavier tails than normal distribution
+4. **Ljung-Box Statistics**: Many p-values are below 0.05, suggesting some remaining autocorrelation
+
+While diagnostics show some departures from ideal white noise residuals (particularly in the tails and Ljung-Box test), this is common in financial data due to volatility clustering, which we address in the GARCH section.
+
+### Step 6: Forecasting
+```{r forecast-arima, fig.cap="12-Step Ahead Forecast from ARIMA(1,1,1)", fig.height=5, fig.width=7}
+# You already have this from the data section
+vix_ts <- ts(vix_data$VIXCLS, 
+             start = c(1990, 1), 
+             frequency = 252)
+
+# Take log of the ts object
+log_vix_ts <- log(vix_ts)
+
+# Now fit ARIMA
+best_arima <- arima(log_vix_ts, order = c(1, 1, 1))
+
+# Forecast
+fc_arima <- forecast(best_arima, h = 12)
+
+# Plot - will show years on x-axis
+plot(fc_arima,
+     main = "ARIMA(1,1,1) Forecast: Next 12 Days",
+     xlab = "Time",
+     ylab = "Log(VIX)",
+     xlim = c(2025.5, 2026.3))  # Adjust to show end of series
+```
+The graph above shows log vix forcasted over the next 12 days. The forecast shows mean reversion toward the long-run average, with expanding confidence intervals reflecting increasing uncertainty. The 80% and 95% prediction intervals widen rapidly with the forecast horizon, indicating increasing uncertainty about future VIX levels. This is characteristic of financial volatility forecasts and reflects both model uncertainty and the inherent unpredictability of market fear. The constant mean forecast after a few steps is typical of ARIMA models. While useful for short-term prediction, the model cannot anticipate future crises or regime changes that drive major VIX spikes. The forecast assumes the historical data-generating process continues unchanged. This forecast represents expected market volatility under normal conditions. The model cannot predict extraordinary events (market crashes, pandemics) that cause extreme VIX spikes.
+
+## GARCH
+The ARIMA model diagnostics revealed heavy-tailed residuals, volatility clustering in residuals, and significant Ljung-Box statistics. These features suggest the presence of conditional heteroskedasticity, which GARCH models are designed to capture. In this project, a GARCH(1,1) model is applied to the VIX return series in order to capture the persistence of volatility over time.
+
+### Testing for ARCH Effects
+```{r arch-test, results='markup'}
+# Compute squared residuals
+resid_arima <- residuals(best_arima)
+
+# ARCH-LM test
+arch_test <- ArchTest(resid_arima, lags = 12)
+
+# Create formatted table
+arch_results <- data.frame(
+  Statistic = c("Chi-squared", "Degrees of Freedom", "P-value", "Conclusion"),
+  Value = c(
+    round(arch_test$statistic, 4),
+    12,
+    format.pval(arch_test$p.value, digits = 4),
+    ifelse(arch_test$p.value < 0.05, 
+           "ARCH effects present", 
+           "No ARCH effects")
+  )
+)
+
+kable(arch_results,
+      caption = "ARCH-LM Test for Conditional Heteroskedasticity",
+      booktabs = TRUE,
+      col.names = c("Test Statistic", "Value")) %>%
+  kable_styling(latex_options = "hold_position")
+```
+The highly significant ARCH-LM test confirms the presence of conditional heteroskedasticity, justifying the use of GARCH modeling. 
+
+### GARCH Model Specification
+We employ a GARCH(1,1) specification, which has been shown to adequately capture volatility dynamics in most financial applications (@hansen2005forecast). The model balances parsimony with the ability to capture volatility clustering and persistence, the key features of VIX dynamics. Furthermore, this will give us parameters that have clear economic meaning making it easier to interpret. 
+
+While we could test higher-order specifications (GARCH(2,1), GARCH(1,2)), the literature strongly suggests that additional parameters rarely improve out-of-sample forecast performance for daily financial data.
+
+```{r garch-estimation, results='hide'}
+# Prepare log returns
+log_returns <- diff(log(vix_data$VIXCLS))
+
+# Specify GARCH(1,1) model
+garch_spec <- ugarchspec(
+  variance.model = list(model = "sGARCH", garchOrder = c(1, 1)),
+  mean.model = list(armaOrder = c(1, 1), include.mean = TRUE),
+  distribution.model = "std"  # Student-t for heavy tails
+)
+
+# Fit the model
+garch_fit <- ugarchfit(spec = garch_spec, data = log_returns)
+```
+
+```{r garch-results-table}
+# Extract coefficients and standard errors
+garch_coef <- coef(garch_fit)
+garch_se <- garch_fit@fit$matcoef[, 2]  # Standard errors
+garch_tstat <- garch_fit@fit$matcoef[, 3]  # t-statistics
+garch_pval <- garch_fit@fit$matcoef[, 4]  # p-values
+
+# Create beautiful parameter table
+param_table <- data.frame(
+  Parameter = c("mu (mean)", "AR(1)", "MA(1)", 
+                "omega", "alpha1", "beta1", 
+                "nu (shape)"),
+  Estimate = round(garch_coef, 6),
+  `Std. Error` = round(garch_se, 6),
+  `t-statistic` = round(garch_tstat, 3),
+  `p-value` = ifelse(garch_pval < 0.001, "< 0.001", 
+                     round(garch_pval, 4)),
+  Significance = ifelse(garch_pval < 0.001, "***",
+                 ifelse(garch_pval < 0.01, "**",
+                 ifelse(garch_pval < 0.05, "*", ""))),
+  check.names = FALSE
+)
+
+kable(param_table,
+      caption = "GARCH(1,1) Parameter Estimates with Student-t Errors",
+      booktabs = TRUE,
+      align = c('l', 'r', 'r', 'r', 'r', 'c')) %>%
+  kable_styling(latex_options = c("hold_position")) %>%
+  pack_rows("Mean Equation", 1, 3) %>%
+  pack_rows("Variance Equation", 4, 6) %>%
+  pack_rows("Distribution", 7, 7) %>%
+  footnote(general = "Significance: *** p<0.001, ** p<0.01, * p<0.05",
+           general_title = "Note:",
+           footnote_as_chunk = TRUE)
+```
+
+```{r garch-model-fit}
+# Model fit statistics
+fit_stats <- data.frame(
+  Statistic = c("Log-Likelihood", "AIC", "BIC", "Shibata", "Hannan-Quinn"),
+  Value = c(
+    likelihood(garch_fit),
+    infocriteria(garch_fit)[1],
+    infocriteria(garch_fit)[2],
+    infocriteria(garch_fit)[3],
+    infocriteria(garch_fit)[4]
+  )
+)
+
+kable(fit_stats,
+      caption = "GARCH(1,1) Model Fit Statistics",
+      booktabs = TRUE,
+      digits = 2,
+      align = c('l', 'r')) %>%
+  kable_styling(latex_options = "hold_position")
+```
+
+```{r garch-persistence}
+# Calculate persistence and half-life
+alpha <- garch_coef["alpha1"]
+beta <- garch_coef["beta1"]
+persistence <- alpha + beta
+half_life <- log(0.5) / log(persistence)
+
+# Persistence table
+persistence_table <- data.frame(
+  Measure = c("alpha1 + beta1 (Persistence)", 
+              "Unconditional Variance", 
+              "Half-life (days)"),
+  Value = c(
+    round(persistence, 4),
+    ifelse(persistence < 1, 
+           round(garch_coef["omega"] / (1 - persistence), 6),
+           "Undefined (alpha+beta >= 1)"),
+    ifelse(persistence < 1,
+           round(half_life, 1),
+           "infinity (non-stationary)")
+  )
+)
+
+kable(persistence_table,
+      caption = "GARCH Persistence Measures",
+      booktabs = TRUE,
+      align = c('l', 'r')) %>%
+  kable_styling(latex_options = "hold_position") %>%
+  footnote(general = "Half-life: time for volatility shock to decay to 50% of initial impact",
+           general_title = "Note:",
+           footnote_as_chunk = TRUE)
+```
+
+**Key Findings**:
+
+- \textbf{$\alpha + \beta$} (ARCH + GARCH) $\approx$ close to 1, indicating high persistence in volatility
+
+- **Student-t shape parameter** < 30 confirms heavy tails
+
+- Both ARCH and GARCH effects are highly significant
+
+**Table 6** presents the estimated GARCH(1,1) parameters with Student-t distributed errors. All parameters are highly significant (p < 0.001), confirming the model's validity. The mean equation reveals strong ARMA dynamics in VIX log returns. The AR(1) coefficient is large and positive, indicating substantial positive autocorrelation in returns. This suggests that VIX movements tend to persist in the short term. The MA(1) coefficient is large and negative, nearly offsetting the AR component. This near-cancellation is characteristic of overdifferenced series and confirms our earlier finding of long memory in VIX. The mean return is slightly negative but economically negligible. On an annualized basis, this represents approximately -0.5% drift in log(VIX), consistent with VIX's mean-reverting nature.
+
+**Table 7** reports goodness-of-fit statistics. The log-likelihood of 12,806.70 is substantially higher than comparable ARIMA-only models, confirming that GARCH significantly improves fit. The information criteria (AIC, BIC, Hannan-Quinn) are all negative, which is typical for well-fitting GARCH models on financial returns data.
+
+**Table 8** presents derived measures of volatility persistence, which are crucial for understanding VIX dynamics.
+
+### Forecasting
+```{r garch-forecast-setup}
+# Forecast 12 steps ahead
+garch_fc <- ugarchforecast(garch_fit, n.ahead = 12)
+
+# Extract forecasts
+fc_mean  <- as.numeric(fitted(garch_fc))
+fc_sigma <- as.numeric(sigma(garch_fc))  # Conditional volatility forecast
+```
+
+```{r garch-vol-forecast, fig.cap="Conditional Volatility Forecast", fig.height=4, fig.width=7}
+hist_sigma <- as.numeric(sigma(garch_fit))
+n <- length(hist_sigma)
+h <- length(fc_sigma)
+
+# Plot historical + forecast volatility
+plot(c((n-100):n, (n+1):(n+h)),
+     c(tail(hist_sigma,101), fc_sigma),
+     type = "n",
+     main = "GARCH(1,1) Conditional Volatility Forecast",
+     xlab = "Time Index",
+     ylab = "Conditional Volatility",
+     xlim = c(n-100, n+h+2))
+
+# Historical volatility
+lines((n-100):n, tail(hist_sigma,101), col = "darkblue", lwd = 1.5)
+
+# Forecast volatility
+lines((n+1):(n+12), as.numeric(fc_sigma), col = "red", lwd = 2, lty = 1)
+points((n+1):(n+12), as.numeric(fc_sigma), col = "red", pch = 19)
+
+# Add vertical line at forecast start
+abline(v = n, col = "gray50", lty = 2, lwd = 2)
+
+# Legend
+legend("topright", 
+       legend = c("Historical sigma", "Forecast sigma"),
+       col = c("darkblue", "red"),
+       lwd = c(1.5, 2),
+       bty = "n")
+
+# Add unconditional volatility line
+uncond_vol <- sqrt(garch_coef["omega"] / (1 - persistence))
+abline(h = uncond_vol, col = "darkgreen", lty = 2, lwd = 1.5)
+text(n-50, uncond_vol + 0.005, 
+     "Unconditional sigma", col = "darkgreen", cex = 0.8)
+```
+
+```{r garch-forecast-table}
+fc_table <- data.frame(
+  Day = 1:12,
+  `Conditional Mean` = round(as.numeric(fc_mean), 6),
+  `Conditional Volatility` = round(as.numeric(fc_sigma), 5),
+  `Annualized Vol (%)` = round(as.numeric(fc_sigma) * sqrt(252) * 100, 2),
+  check.names = FALSE
+)
+
+kable(fc_table,
+      caption = "12-Day GARCH Forecast",
+      booktabs = TRUE,
+      align = c('c','r','r','r')) %>%
+  kable_styling(latex_options = c("hold_position","scale_down"))
+```
+
+The GARCH(1,1) volatility forecast exhibits **mean reversion** toward the unconditional volatility level. Key observations:
+
+1. **Volatility Decay**: Forecast volatility gradually converges to the long-run unconditional volatility. This reflects the mean-reverting property implied by $\alpha_1 + \beta_1 < 1$
+
+2. **Half-Life Effect**: With a half-life of `r round(half_life, 1)` days, the forecast shows that if current volatility is elevated, it will take approximately 1-2 weeks to decay halfway to the unconditional level.
+
+3. **No Regime Prediction**: Like the ARIMA mean forecast, GARCH cannot predict future crises or regime changes. The forecast assumes the current volatility regime continues and gradually reverts to the long-run average.
+
+**Current vs. Long-run**: If the current conditional volatility is `r round(tail(hist_sigma, 1), 5)` and unconditional is `r round(uncond_vol, 5)`, the forecast shows `r ifelse(tail(hist_sigma, 1) > uncond_vol, "mean reversion downward", "mean reversion upward")` as volatility returns to its equilibrium level.
+
+\newpage
+
+# Conclusion and Future Study
+
+## Acknowledgements
+
+\newpage
+
+# Appendix
+
+Follow the code at this [github repo](https://github.com/aarti-garaye/VIXTimeSeriesAnalysis.git)
+
+```{r load-lib, echo=TRUE}
+# Load required libraries
+library(readr)
+library(forecast)
+library(astsa)
+library(tseries)
+library(rugarch)
+library(ggplot2)
+library(gridExtra)
+library(knitr)
+library(kableExtra)
+library(moments)
+```
+
+
+## Data
+### Summary Statistics Table
+```{r data-table, echo=TRUE, results='hide'}
+# Load the VIX data
+vix_data <- read_csv("Data/VIXCLS.csv", show_col_types = FALSE)
+vix_data <- na.omit(vix_data)
+
+# Convert to time series object
+vix_ts <- ts(vix_data$VIXCLS, 
+             start = c(1990, 1), 
+             frequency = 252)  # Trading days per year
+
+# Basic statistics
+vix_stats <- data.frame(
+  Statistic = c("Mean", "Median", "Std. Dev.", "Min", "Max", "N"),
+  Value = c(
+    mean(vix_data$VIXCLS, na.rm = TRUE),
+    median(vix_data$VIXCLS, na.rm = TRUE),
+    sd(vix_data$VIXCLS, na.rm = TRUE),
+    min(vix_data$VIXCLS, na.rm = TRUE),
+    max(vix_data$VIXCLS, na.rm = TRUE),
+    nrow(vix_data)
+  )
+)
+
+kable(vix_stats, 
+      digits = 2,
+      caption = "Summary Statistics of VIX",
+      booktabs = TRUE) %>%
+  kable_styling(latex_options = c("hold_position"))
+```
+
+### EDA
+```{r eda, echo=TRUE, fig.show='hide', results='hide'}
+# Time series plot
+plot(vix_ts, 
+     main = "CBOE Volatility Index (VIX) - Daily Close",
+     ylab = "VIX Level",
+     xlab = "Year",
+     lwd = 0.5)
+
+# Add horizontal line at mean
+abline(h = mean(vix_data$VIXCLS, na.rm = TRUE), 
+       col = "red", 
+       lty = 2, 
+       lwd = 2)
+
+# Highlight major crisis periods
+rect(2008, 0, 2009, 100, col = rgb(1, 0, 0, 0.1), border = NA)
+rect(2020, 0, 2021, 100, col = rgb(1, 0, 0, 0.1), border = NA)
+
+text(2008.5, 75, "2008 Financial\nCrisis", cex = 0.8)
+text(2020.5, 75, "COVID-19\nPandemic", cex = 0.8)
+
+# Histogram and QQ
+par(mfrow = c(1, 2))
+
+# Histogram
+hist(vix_data$VIXCLS, 
+     breaks = 50,
+     main = "Histogram of VIX",
+     xlab = "VIX Level",
+     col = "lightblue",
+     border = "white")
+
+# Q-Q plot
+qqnorm(vix_data$VIXCLS, 
+       main = "Q-Q Plot: VIX vs Normal",
+       pch = 20,
+       col = alpha("darkblue", 0.5))
+qqline(vix_data$VIXCLS, 
+       col = "red", 
+       lwd = 2)
+
+par(mfrow = c(1, 1))
+```
+
+## Results
+
+### SARMIA
+```{r, echo=TRUE, fig.show='hide', results='hide'}
+log_vix <- log(vix_data$VIXCLS)
+
+# ADF test on levels
+adf_levels <- adf.test(log_vix)
+
+# ADF test on first differences
+dlog_vix <- diff(log_vix)
+adf_diff <- adf.test(dlog_vix)
+
+# Create results table
+adf_results <- data.frame(
+  Series = c("Log(VIX)", " Diff Log(VIX)"),
+  `ADF Statistic` = c(adf_levels$statistic, adf_diff$statistic),
+  `P-value` = c(adf_levels$p.value, adf_levels$p.value),
+  Conclusion = c("Stationary", "Stationary")
+)
+
+kable(adf_results,
+      digits = 4,
+      caption = "Augmented Dickey-Fuller Test Results",
+      booktabs = TRUE) %>%
+  kable_styling(latex_options = "hold_position")
+
+# ACF PACF
+par(mfrow = c(2, 1))
+
+acf(log_vix, 
+    lag.max = 100,
+    main = "ACF of Log(VIX)",
+    na.action = na.pass)
+
+pacf(log_vix, 
+     lag.max = 100,
+     main = "PACF of Log(VIX)",
+     na.action = na.pass)
+
+par(mfrow = c(1, 1))
+
+# model comparison
+# Fit candidate models
+fit011 <- arima(log_vix, order = c(0, 1, 1))
+fit110 <- arima(log_vix, order = c(1, 1, 0))
+fit111 <- arima(log_vix, order = c(1, 1, 1))
+
+# Compare models
+model_comparison <- data.frame(
+  Model = c("ARIMA(0,1,1)", "ARIMA(1,1,0)", "ARIMA(1,1,1)"),
+  AIC = c(AIC(fit011), AIC(fit110), AIC(fit111)),
+  BIC = c(BIC(fit011), BIC(fit110), BIC(fit111))
+)
+
+# Highlight best model
+model_comparison$Best_AIC <- ifelse(model_comparison$AIC == min(model_comparison$AIC), "*", "")
+model_comparison$Best_BIC <- ifelse(model_comparison$BIC == min(model_comparison$BIC), "*", "")
+
+kable(model_comparison,
+      digits = 2,
+      caption = "Model Comparison - Information Criteria (* indicates best model)",
+      booktabs = TRUE) %>%
+  kable_styling(latex_options = "hold_position")
+
+# Best model
+best_arima <- fit111
+
+# Display coefficients
+coef_table <- data.frame(
+  Parameter = names(coef(best_arima)),
+  Estimate = coef(best_arima),
+  SE = sqrt(diag(vcov(best_arima)))
+)
+coef_table$`t-value` <- coef_table$Estimate / coef_table$SE
+coef_table$`p-value` <- 2 * (1 - pnorm(abs(coef_table$`t-value`)))
+
+kable(coef_table,
+      digits = 4,
+      caption = "ARIMA(1,1,1) Parameter Estimates",
+      booktabs = TRUE,
+      row.names = FALSE) %>%
+  kable_styling(latex_options = "hold_position")
+
+# fitting Sarima
+# Use sarima for nice diagnostic plots
+sarima_fit <- sarima(log_vix, 1, 1, 1)
+
+# Forecasting
+# You already have this from the data section
+vix_ts <- ts(vix_data$VIXCLS, 
+             start = c(1990, 1), 
+             frequency = 252)
+
+# Take log of the ts object
+log_vix_ts <- log(vix_ts)
+
+# Now fit ARIMA
+best_arima <- arima(log_vix_ts, order = c(1, 1, 1))
+
+# Forecast
+fc_arima <- forecast(best_arima, h = 12)
+
+# Plot - will show years on x-axis
+plot(fc_arima,
+     main = "ARIMA(1,1,1) Forecast: Next 12 Days",
+     xlab = "Time",
+     ylab = "Log(VIX)",
+     xlim = c(2025.5, 2026.3))  # Adjust to show end of series
+```
+
+### GARCH
+```{r, echo=TRUE, fig.show='hide', results='hide'}
+# Compute squared residuals
+resid_arima <- residuals(best_arima)
+
+# ARCH-LM test
+arch_test <- ArchTest(resid_arima, lags = 12)
+
+# Create formatted table
+arch_results <- data.frame(
+  Statistic = c("Chi-squared", "Degrees of Freedom", "P-value", "Conclusion"),
+  Value = c(
+    round(arch_test$statistic, 4),
+    12,
+    format.pval(arch_test$p.value, digits = 4),
+    ifelse(arch_test$p.value < 0.05, 
+           "ARCH effects present", 
+           "No ARCH effects")
+  )
+)
+
+kable(arch_results,
+      caption = "ARCH-LM Test for Conditional Heteroskedasticity",
+      booktabs = TRUE,
+      col.names = c("Test Statistic", "Value")) %>%
+  kable_styling(latex_options = "hold_position")
+
+# Prepare log returns
+log_returns <- diff(log(vix_data$VIXCLS))
+
+# Specify GARCH(1,1) model
+garch_spec <- ugarchspec(
+  variance.model = list(model = "sGARCH", garchOrder = c(1, 1)),
+  mean.model = list(armaOrder = c(1, 1), include.mean = TRUE),
+  distribution.model = "std"  # Student-t for heavy tails
+)
+
+# Fit the model
+garch_fit <- ugarchfit(spec = garch_spec, data = log_returns)
+
+# Extract coefficients and standard errors
+garch_coef <- coef(garch_fit)
+garch_se <- garch_fit@fit$matcoef[, 2]  # Standard errors
+garch_tstat <- garch_fit@fit$matcoef[, 3]  # t-statistics
+garch_pval <- garch_fit@fit$matcoef[, 4]  # p-values
+
+# Create beautiful parameter table
+param_table <- data.frame(
+  Parameter = c("mu (mean)", "AR(1)", "MA(1)", 
+                "omega", "alpha1", "beta1", 
+                "nu (shape)"),
+  Estimate = round(garch_coef, 6),
+  `Std. Error` = round(garch_se, 6),
+  `t-statistic` = round(garch_tstat, 3),
+  `p-value` = ifelse(garch_pval < 0.001, "< 0.001", 
+                     round(garch_pval, 4)),
+  Significance = ifelse(garch_pval < 0.001, "***",
+                 ifelse(garch_pval < 0.01, "**",
+                 ifelse(garch_pval < 0.05, "*", ""))),
+  check.names = FALSE
+)
+
+kable(param_table,
+      caption = "GARCH(1,1) Parameter Estimates with Student-t Errors",
+      booktabs = TRUE,
+      align = c('l', 'r', 'r', 'r', 'r', 'c')) %>%
+  kable_styling(latex_options = c("hold_position")) %>%
+  pack_rows("Mean Equation", 1, 3) %>%
+  pack_rows("Variance Equation", 4, 6) %>%
+  pack_rows("Distribution", 7, 7) %>%
+  footnote(general = "Significance: *** p<0.001, ** p<0.01, * p<0.05",
+           general_title = "Note:",
+           footnote_as_chunk = TRUE)
+
+# Model fit statistics
+fit_stats <- data.frame(
+  Statistic = c("Log-Likelihood", "AIC", "BIC", "Shibata", "Hannan-Quinn"),
+  Value = c(
+    likelihood(garch_fit),
+    infocriteria(garch_fit)[1],
+    infocriteria(garch_fit)[2],
+    infocriteria(garch_fit)[3],
+    infocriteria(garch_fit)[4]
+  )
+)
+
+kable(fit_stats,
+      caption = "GARCH(1,1) Model Fit Statistics",
+      booktabs = TRUE,
+      digits = 2,
+      align = c('l', 'r')) %>%
+  kable_styling(latex_options = "hold_position")
+
+# Calculate persistence and half-life
+alpha <- garch_coef["alpha1"]
+beta <- garch_coef["beta1"]
+persistence <- alpha + beta
+half_life <- log(0.5) / log(persistence)
+
+# Persistence table
+persistence_table <- data.frame(
+  Measure = c("alpha1 + beta1 (Persistence)", 
+              "Unconditional Variance", 
+              "Half-life (days)"),
+  Value = c(
+    round(persistence, 4),
+    ifelse(persistence < 1, 
+           round(garch_coef["omega"] / (1 - persistence), 6),
+           "Undefined (alpha+beta >= 1)"),
+    ifelse(persistence < 1,
+           round(half_life, 1),
+           "infinity (non-stationary)")
+  )
+)
+
+kable(persistence_table,
+      caption = "GARCH Persistence Measures",
+      booktabs = TRUE,
+      align = c('l', 'r')) %>%
+  kable_styling(latex_options = "hold_position") %>%
+  footnote(general = "Half-life: time for volatility shock to decay to 50% of initial impact",
+           general_title = "Note:",
+           footnote_as_chunk = TRUE)
+
+# Forecasting
+# Forecast 12 steps ahead
+garch_fc <- ugarchforecast(garch_fit, n.ahead = 12)
+
+# Extract forecasts
+fc_mean  <- as.numeric(fitted(garch_fc))
+fc_sigma <- as.numeric(sigma(garch_fc))  # Conditional volatility forecast
+
+hist_sigma <- as.numeric(sigma(garch_fit))
+n <- length(hist_sigma)
+h <- length(fc_sigma)
+
+# Plot historical + forecast volatility
+plot(c((n-100):n, (n+1):(n+h)),
+     c(tail(hist_sigma,101), fc_sigma),
+     type = "n",
+     main = "GARCH(1,1) Conditional Volatility Forecast",
+     xlab = "Time Index",
+     ylab = "Conditional Volatility",
+     xlim = c(n-100, n+h+2))
+
+# Historical volatility
+lines((n-100):n, tail(hist_sigma,101), col = "darkblue", lwd = 1.5)
+
+# Forecast volatility
+lines((n+1):(n+12), as.numeric(fc_sigma), col = "red", lwd = 2, lty = 1)
+points((n+1):(n+12), as.numeric(fc_sigma), col = "red", pch = 19)
+
+# Add vertical line at forecast start
+abline(v = n, col = "gray50", lty = 2, lwd = 2)
+
+# Legend
+legend("topright", 
+       legend = c("Historical sigma", "Forecast sigma"),
+       col = c("darkblue", "red"),
+       lwd = c(1.5, 2),
+       bty = "n")
+
+# Add unconditional volatility line
+uncond_vol <- sqrt(garch_coef["omega"] / (1 - persistence))
+abline(h = uncond_vol, col = "darkgreen", lty = 2, lwd = 1.5)
+text(n-50, uncond_vol + 0.005, 
+     "Unconditional sigma", col = "darkgreen", cex = 0.8)
+
+fc_table <- data.frame(
+  Day = 1:12,
+  `Conditional Mean` = round(as.numeric(fc_mean), 6),
+  `Conditional Volatility` = round(as.numeric(fc_sigma), 5),
+  `Annualized Vol (%)` = round(as.numeric(fc_sigma) * sqrt(252) * 100, 2),
+  check.names = FALSE
+)
+
+kable(fc_table,
+      caption = "12-Day GARCH Forecast",
+      booktabs = TRUE,
+      align = c('c','r','r','r')) %>%
+  kable_styling(latex_options = c("hold_position","scale_down"))
+```
+
+
+
+
+\newpage
+
+# References
