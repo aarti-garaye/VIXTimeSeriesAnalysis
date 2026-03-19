@@ -639,11 +639,35 @@ The GARCH(1,1) volatility forecast exhibits **mean reversion** toward the uncond
 
 **Current vs. Long-run**: If the current conditional volatility is `r round(tail(hist_sigma, 1), 5)` and unconditional is `r round(uncond_vol, 5)`, the forecast shows `r ifelse(tail(hist_sigma, 1) > uncond_vol, "mean reversion downward", "mean reversion upward")` as volatility returns to its equilibrium level.
 
-\newpage
-
 # Conclusion and Future Study
 
+## Summary of Findings
+This study analyzed the CBOE Volatility Index (VIX) using advanced time series methodologies. The key findings are:
+
+### SARIMA Results
+
+ARIMA(1,1,1) was identified as the best model for conditional mean. Log-differencing $(d=1)$ was necessary to achieve stationarity. Although it was suspected that due to the long memory nature of the ACF, $d$ might be fractional, somewhere around $0.4$ or $0.5$, it was out of the scope for this project. Future studies could be conducted on using fractional difference to caputre long memory and the use that model to forecast. I have updated my github repository for this project to include the long memory analysis for this project. The link is available at the beginning of the Appendix section.
+
+### GARCH Results
+
+Strong evidence of ARCH effects justifying GARCH modeling because there was volatility clustering present. I chose the GARCH(1,1) with Student-t errors model which effectively captures the time varying volatility, persistence in volatility $\alpha + \beta \approx 0.99$, and the heavy tailed distributions of the returns. Furthermore, the model also successfully identifies periods of extreme volatility (2008, 2020). 
+
+## Important Discoveries
+VIX exhibits strong mean-reverting tendencies but with time-varying volatility. Volatility persistence is very high, meaning shocks to volatility take a long time to dissipate. GARCH substantially improves upon ARIMA-only modeling by capturing heteroskedasticity. Student-t distribution better captures the heavy tails than normal distribution. 
+
+## Practical Implementations and Limitations
+The findings have several practical applications. GARCH volatility forecasts can inform Value-at-Risk (VaR) calculations, high persistence warns risk managers that elevated volatility may persist. Mean reversion suggests contrarian strategies may work this affects trading strategies. Furthermore, time-varying volatility must be incorporated into option pricing models. Heavy tails suggest standard Black-Scholes may misprice out-of-the-money options. 
+
+For the limitations, both ARIMA and GARCH assume linear relationships; regime-switching models might better capture crisis dynamics. Even with Student-t, extreme tail events may be underestimated underestimating the normal distribution. I did not include macroeconomic or market variables that might improve forecasts
+
+Future studies based on a fractional difference unit and using neural networks like TimeGANS and Variational Autoencoder (VAE) (@desai2021timevae) would provide with better forecasts. Other neural networks have provided good results in forecasting but there is still a lot more to be done (@ballestra2019forecasting). One could also try regime switching models, this does not depend on the Markovian property of GARCH (@haas2004new). 
+
+The VIX remains one of the most important indicators in modern finance. This analysis demonstrates that while traditional econometric methods (ARIMA and GARCH) provide valuable insights and reasonable forecasts, the complexity of financial volatility continues to challenge researchers. The interplay between mean reversion and volatility persistence, combined with occasional extreme events, makes volatility modeling both challenging and crucial for financial market participants.
+
+As markets evolve and new crises emerge, ongoing research into volatility dynamics will remain essential for understanding and managing financial risk.
+
 ## Acknowledgements
+I would like to thank my professor, Dr. Tomoyuki Ichiba, for providing me with the opportunity to build this project. I would also like to thank the UCSB PSTAT Department for their support. 
 
 \newpage
 
