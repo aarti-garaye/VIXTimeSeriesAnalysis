@@ -1,0 +1,214 @@
+/*-- scss:defaults --*/
+
+// UCSB Colors
+$ucsb-navy: #003660;
+$ucsb-gold: #FEBC11;
+$background-color: white;
+
+/*-- scss:rules --*/
+
+// Global slide styling
+.reveal {
+  font-family: "Arial", "Helvetica", sans-serif;
+  font-size: 36px;
+}
+
+// Slide content area
+.reveal .slides {
+  text-align: left;
+}
+
+// Main title (h1)
+.reveal h1 {
+  color: $ucsb-navy;
+  font-size: 3.0em;
+  font-weight: 800;
+  margin-bottom: 0.4em;
+  text-transform: none;
+}
+
+// Section titles (h2)
+.reveal h2 {
+  color: $ucsb-navy;
+  font-size: 2.0em;
+  font-weight: 800;
+  margin-top: 0.4em;
+  text-transform: none;
+  text-align: left;
+}
+
+// Subsection titles (h3)
+.reveal h3 {
+  color: $ucsb-navy;
+  font-size: 1.6em;
+  font-weight: 600;
+  margin-bottom: 0.3em;
+  text-align: left;
+}
+
+// Paragraph text
+.reveal p {
+  font-size: 1.0em;
+  line-height: 1.4;
+  margin: 0.5em 0;
+}
+
+// Lists
+.reveal ul, .reveal ol {
+  font-size: 1.0em;
+  line-height: 1.6;
+  margin-left: 1.2em;
+}
+
+.reveal ul li, .reveal ol li {
+  margin-bottom: 0.5em;
+}
+
+// Strong emphasis
+.reveal strong {
+  color: $ucsb-navy;
+  font-weight: 700;
+}
+
+// Links
+.reveal a {
+  color: $ucsb-navy;
+  text-decoration: underline;
+  
+  &:hover {
+    color: $ucsb-gold;
+  }
+}
+
+// Tables
+.reveal table {
+  margin: 0.5em auto;
+  border: 1px solid #666;
+  font-size: 0.7em;
+  width: 90%;
+  
+  th {
+    background: $ucsb-navy;
+    color: white;
+    padding: 10px;
+    text-align: left;
+    font-weight: 700;
+  }
+  
+  td {
+    padding: 8px 10px;
+    border: 1px solid #666;
+  }
+  
+  tbody tr:nth-child(even) {
+    background: #f9f9f9;
+    border: 1px solid #666;
+  }
+}
+
+// Images
+.reveal img {
+  margin: 1em auto;
+  display: block;
+  border: none;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+// Progress bar
+.reveal .progress {
+  background: rgba(0, 54, 96, 0.2);
+  color: $ucsb-navy;
+  height: 4px;
+  
+  span {
+    background: $ucsb-navy;
+  }
+}
+
+// Highlight boxes
+.alert {
+  background: #fff3cd;
+  border-left: 5px solid $ucsb-gold;
+  padding: 1em;
+  margin: 1em 0;
+  font-size: 0.85em;
+}
+
+.info {
+  background: #d1ecf1;
+  border-left: 5px solid $ucsb-navy;
+  padding: 1em;
+  margin: 1em 0;
+  font-size: 0.85em;
+}
+
+// Text size helpers
+.small {
+  font-size: 0.7em;
+}
+
+.smaller {
+  font-size: 0.85em !important;
+}
+
+.tiny {
+  font-size: 0.6em;
+}
+
+// Center helper
+.center {
+  text-align: center;
+}
+
+// Slide number
+.reveal .slide-number {
+  color: $ucsb-navy;
+  background: transparent;
+  font-weight: 700;
+  font-size: 0.7em;
+}
+
+// Title slide
+.reveal .title-slide {
+  h1 {
+    font-size: 2.2em;
+    color: $ucsb-navy;
+    margin-bottom: 0.2em;
+  }
+  
+  h2 {
+    font-size: 1.2em;
+    color: #666;
+    font-weight: 400;
+    margin-top: 0.5em;
+  }
+  
+  .author {
+    font-size: 1em;
+    color: $ucsb-navy;
+    margin-top: 1em;
+  }
+  
+  .date {
+    font-size: 0.8em;
+    color: #666;
+    margin-top: 0.5em;
+  }
+}
+// Footer with logo
+.reveal .footer {
+  position: fixed !important;
+  bottom: 20px !important;
+  left: 50px !important;
+  right: auto !important;
+  text-align: left !important;
+  
+  img {
+    height: 20px !important;
+    width: auto !important;
+    margin: 0 !important;
+    display: block !important;
+  }
+}
+
+

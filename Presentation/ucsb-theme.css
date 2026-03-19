@@ -1,0 +1,242 @@
+/*===============================================
+  UCSB Presentation Theme for Quarto Reveal.js
+  Colors: Navy Blue (#003660), Gold (#FEBC11)
+===============================================*/
+
+/* Global slide styling */
+.reveal {
+  font-family: 'Arial', 'Helvetica', sans-serif;
+  font-size: 32px;
+  background: white;
+}
+
+/* Slide content area */
+.reveal .slides {
+  text-align: left;
+}
+
+/* Main title (h1) */
+.reveal h1 {
+  color: #003660;
+  font-size: 2.0em;
+  font-weight: 700;
+  margin-bottom: 0.3em;
+  text-transform: none;
+  text-align: left;
+}
+
+/* Section titles (h2) */
+.reveal h2 {
+  color: #003660;
+  font-size: 1.5em;
+  font-weight: 600;
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+  text-transform: none;
+  text-align: left;
+}
+
+/* Subsection titles (h3) */
+.reveal h3 {
+  color: #003660;
+  font-size: 1.2em;
+  font-weight: 600;
+  margin-bottom: 0.3em;
+  text-align: left;
+}
+
+/* Paragraph text */
+.reveal p {
+  font-size: 0.85em;
+  line-height: 1.4;
+  margin: 0.5em 0;
+}
+
+/* Lists */
+.reveal ul, .reveal ol {
+  font-size: 0.85em;
+  line-height: 1.5;
+  margin-left: 1em;
+}
+
+.reveal ul li, .reveal ol li {
+  margin-bottom: 0.4em;
+}
+
+/* Strong emphasis */
+.reveal strong {
+  color: #003660;
+  font-weight: 700;
+}
+
+/* Links */
+.reveal a {
+  color: #003660;
+  text-decoration: underline;
+}
+
+.reveal a:hover {
+  color: #FEBC11;
+}
+
+/* Code blocks */
+.reveal code {
+  background: #f5f5f5;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.8em;
+}
+
+.reveal pre code {
+  background: #f8f8f8;
+  padding: 15px;
+  border-left: 4px solid #003660;
+  font-size: 0.65em;
+  max-height: 500px;
+  overflow: auto;
+}
+
+/* Tables */
+.reveal table {
+  margin: 0.5em auto;
+  border-collapse: collapse;
+  font-size: 0.7em;
+  width: 90%;
+}
+
+.reveal table th {
+  background: #003660;
+  color: white;
+  padding: 10px;
+  text-align: left;
+  font-weight: 700;
+}
+
+.reveal table td {
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+}
+
+.reveal table tbody tr:nth-child(even) {
+  background: #f9f9f9;
+}
+
+.reveal table tbody tr:hover {
+  background: #f0f8ff;
+}
+
+/* Images */
+.reveal img {
+  max-width: 85%;
+  max-height: 500px;
+  margin: 1em auto;
+  display: block;
+  border: none;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Image captions */
+.reveal figcaption {
+  font-size: 0.6em;
+  color: #666;
+  font-style: italic;
+  text-align: center;
+  margin-top: 0.5em;
+}
+
+/* Footer (slide number area) */
+.reveal .slide-number {
+  color: #003660;
+  background: transparent;
+  font-weight: 700;
+  font-size: 0.7em;
+}
+
+/* Progress bar */
+.reveal .progress {
+  background: rgba(0, 54, 96, 0.2);
+  color: #003660;
+  height: 4px;
+}
+
+.reveal .progress span {
+  background: #003660;
+}
+
+/* Title slide special styling */
+.reveal .title-slide h1 {
+  font-size: 2.2em;
+  color: #003660;
+  margin-bottom: 0.2em;
+}
+
+.reveal .title-slide h2 {
+  font-size: 1.2em;
+  color: #666;
+  font-weight: 400;
+  margin-top: 0.5em;
+}
+
+.reveal .title-slide .author {
+  font-size: 1em;
+  color: #003660;
+  margin-top: 1em;
+}
+
+.reveal .title-slide .date {
+  font-size: 0.8em;
+  color: #666;
+  margin-top: 0.5em;
+}
+
+/* Two-column layout helper */
+.columns {
+  display: flex;
+  gap: 2em;
+}
+
+.column {
+  flex: 1;
+}
+
+/* Highlight boxes */
+.alert {
+  background: #fff3cd;
+  border-left: 5px solid #FEBC11;
+  padding: 1em;
+  margin: 1em 0;
+  font-size: 0.85em;
+}
+
+.info {
+  background: #d1ecf1;
+  border-left: 5px solid #003660;
+  padding: 1em;
+  margin: 1em 0;
+  font-size: 0.85em;
+}
+
+/* Smaller text helper */
+.small {
+  font-size: 0.7em;
+}
+
+.tiny {
+  font-size: 0.6em;
+}
+
+/* Center text helper */
+.center {
+  text-align: center;
+}
+
+/* UCSB brand footer */
+.ucsb-footer {
+  position: absolute;
+  bottom: 20px;
+  left: 30px;
+  font-size: 0.6em;
+  color: #003660;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
