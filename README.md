@@ -36,7 +36,7 @@ install.packages(c("readr", "forecast", "astsa", "tseries",
 Open and knit the main analysis file:
 
 ```r
-rmarkdown::render("Code/VIX_Final_Project.Rmd")
+rmarkdown::render("VIXTimeSeriesAnalysis.Rmd")
 ```
 
 ### Generating the Presentation
