@@ -85,7 +85,7 @@ The dataset used in this project consists of daily closing values of the CBOE Vo
 The VIX ranges from $0$ to $\infty$, while there are some missing values there are no negative VIX indexes. There are a total of 9425 observations. 
 
 ### Source and Collection
-The dataset is obtained from the [FRED: Federal Reserve Bank of St. Louis.](https://fred.stlouisfed.org/series/VIXCLS). he source is Chicago Board of Options Exchange and released by CBOE Market Statistics. The VIX observed when the market closed was monitored and stored in the dataset. The data is not adjusted for seasonality. 
+The dataset is obtained from the [FRED: Federal Reserve Bank of St. Louis.](https://fred.stlouisfed.org/series/VIXCLS). The source is Chicago Board of Options Exchange and released by CBOE Market Statistics. The VIX observed when the market closed was monitored and stored in the dataset. The data is not adjusted for seasonality. 
 
 ### Time Range and Frequency
 - **Start Date**: January 2, 1990
