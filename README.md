@@ -76,6 +76,10 @@ Final models selected:
 - Volatility persistence: High (alpha + beta = 0.91)
 - Half-life of shocks: 7.4 days
 
+## Presentation
+
+A small 25 slide deck was used to present the high level idea of this project. It is live on the github pages for this repository. [This](https://aarti-garaye.github.io/VIXTimeSeriesAnalysis/) is the link to the slides.
+
 ## Files
 
 - **VIX_Final_Project.Rmd**: Main analysis report
