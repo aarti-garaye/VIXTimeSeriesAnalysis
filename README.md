@@ -82,7 +82,7 @@ A small 25 slide deck was used to present the high level idea of this project. I
 
 ## Files
 
-- **VIX_Final_Project.Rmd**: Main analysis report
+- **VIXTimeSeriesAnalysis.Rmd**: Main analysis report
 - **VIX_Presentation.qmd**: Presentation slides
 - **VIXCLS.csv**: Raw VIX data
 - **references.bib**: Bibliography
