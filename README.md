@@ -78,7 +78,7 @@ Final models selected:
 
 ## Presentation
 
-A small 25 slide deck was used to present the high level idea of this project. It is live on the github pages for this repository. [This](https://aarti-garaye.github.io/VIXTimeSeriesAnalysis/) is the link to the slides.
+A small 25 slide deck was used to present the high level idea of this project. It is live on the github pages for this repository. [This](https://aarti-garaye.github.io/VIXTimeSeriesAnalysis/) is the link to the slides. Further information about this is stored in the docs folder.
 
 ## Files
 
